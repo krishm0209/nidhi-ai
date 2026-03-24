@@ -24,7 +24,7 @@ export function GoldForm() {
   const isWeightBased = form === 'physical' || form === 'digital'
 
   return (
-    <form action={formAction} className="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <form action={formAction} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       {state?.error && (
         <div className="col-span-full rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
