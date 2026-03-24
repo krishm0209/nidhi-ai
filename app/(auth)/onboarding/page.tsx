@@ -1,27 +1,81 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { createProfile } from './actions'
+'use client'
 
-export default async function OnboardingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>
-}) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
-  if (!user) redirect('/login')
+export default function OnboardingPage() {
+  const router = useRouter()
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  // Already completed onboarding?
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('id', user.id)
-    .single()
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
 
-  if (profile) redirect('/dashboard')
+    const formData = new FormData(e.currentTarget)
+    const fullName = (formData.get('full_name') as string).trim()
+    const phone = (formData.get('phone') as string).trim() || null
+    const dateOfBirth = (formData.get('date_of_birth') as string) || null
+    const riskProfile = (formData.get('risk_profile') as string) || null
 
-  const { error } = await searchParams
+    if (!fullName) {
+      setError('Full name is required')
+      setLoading(false)
+      return
+    }
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({ id: user.id, full_name: fullName, phone, date_of_birth: dateOfBirth, risk_profile: riskProfile })
+
+    if (profileError) {
+      setError(profileError.message)
+      setLoading(false)
+      return
+    }
+
+    const { data: household, error: householdError } = await supabase
+      .from('households')
+      .insert({ name: `${fullName}'s Portfolio`, owner_id: user.id })
+      .select('id')
+      .single()
+
+    if (householdError || !household) {
+      setError(householdError?.message ?? 'Failed to create household')
+      setLoading(false)
+      return
+    }
+
+    const { error: memberError } = await supabase
+      .from('household_members')
+      .insert({
+        household_id: household.id,
+        user_id: user.id,
+        name: fullName,
+        relationship: 'self',
+        date_of_birth: dateOfBirth,
+        is_active: true,
+        visibility: 'full',
+      })
+
+    if (memberError) {
+      setError(memberError.message)
+      setLoading(false)
+      return
+    }
+
+    router.push('/dashboard')
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-8">
@@ -32,11 +86,11 @@ export default async function OnboardingPage({
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {decodeURIComponent(error)}
+          {error}
         </div>
       )}
 
-      <form action={createProfile} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="full_name" className="block text-sm font-medium text-zinc-700 mb-1">
             Full name <span className="text-red-500">*</span>
@@ -95,9 +149,10 @@ export default async function OnboardingPage({
 
         <button
           type="submit"
-          className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors"
+          disabled={loading}
+          className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors"
         >
-          Get started
+          {loading ? 'Setting up…' : 'Get started'}
         </button>
       </form>
     </div>
