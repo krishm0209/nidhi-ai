@@ -217,8 +217,13 @@ export function SettingsClient({
             )}
             onClick={async () => {
               if (deleteConfirm !== email) return
-              // Contact support to delete — full deletion requires service role
-              window.location.href = 'mailto:support@nidhi.ai?subject=Delete my account&body=Please delete my account: ' + email
+              const res = await fetch('/api/account/delete', { method: 'DELETE' })
+              if (res.ok) {
+                window.location.href = '/login'
+              } else {
+                const data = await res.json()
+                alert('Failed to delete account: ' + data.error)
+              }
             }}
           >
             Delete my account
