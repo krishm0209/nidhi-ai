@@ -1,81 +1,20 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { OnboardingForm } from './OnboardingForm'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+export default async function OnboardingPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-export default function OnboardingPage() {
-  const router = useRouter()
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  if (!user) redirect('/login')
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .single()
 
-    const formData = new FormData(e.currentTarget)
-    const fullName = (formData.get('full_name') as string).trim()
-    const phone = (formData.get('phone') as string).trim() || null
-    const dateOfBirth = (formData.get('date_of_birth') as string) || null
-    const riskProfile = (formData.get('risk_profile') as string) || null
-
-    if (!fullName) {
-      setError('Full name is required')
-      setLoading(false)
-      return
-    }
-
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      router.push('/login')
-      return
-    }
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({ id: user.id, full_name: fullName, phone, date_of_birth: dateOfBirth, risk_profile: riskProfile })
-
-    if (profileError) {
-      setError(profileError.message)
-      setLoading(false)
-      return
-    }
-
-    const { data: household, error: householdError } = await supabase
-      .from('households')
-      .insert({ name: `${fullName}'s Portfolio`, owner_id: user.id })
-      .select('id')
-      .single()
-
-    if (householdError || !household) {
-      setError(householdError?.message ?? 'Failed to create household')
-      setLoading(false)
-      return
-    }
-
-    const { error: memberError } = await supabase
-      .from('household_members')
-      .insert({
-        household_id: household.id,
-        user_id: user.id,
-        name: fullName,
-        relationship: 'self',
-        date_of_birth: dateOfBirth,
-        is_active: true,
-        visibility: 'full',
-      })
-
-    if (memberError) {
-      setError(memberError.message)
-      setLoading(false)
-      return
-    }
-
-    router.push('/dashboard')
-  }
+  if (profile) redirect('/dashboard')
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-8">
@@ -83,78 +22,7 @@ export default function OnboardingPage() {
       <p className="text-sm text-zinc-500 mb-6">
         Just a few details to personalise your experience.
       </p>
-
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="full_name" className="block text-sm font-medium text-zinc-700 mb-1">
-            Full name <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="full_name"
-            name="full_name"
-            type="text"
-            required
-            autoFocus
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            placeholder="Ravi Sharma"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-zinc-700 mb-1">
-            Phone number
-          </label>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            placeholder="+91 98765 43210"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="date_of_birth" className="block text-sm font-medium text-zinc-700 mb-1">
-            Date of birth
-          </label>
-          <input
-            id="date_of_birth"
-            name="date_of_birth"
-            type="date"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="risk_profile" className="block text-sm font-medium text-zinc-700 mb-1">
-            Risk appetite
-          </label>
-          <select
-            id="risk_profile"
-            name="risk_profile"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
-          >
-            <option value="">Select risk profile</option>
-            <option value="conservative">Conservative — capital preservation first</option>
-            <option value="moderate">Moderate — balanced growth and safety</option>
-            <option value="aggressive">Aggressive — maximum long-term growth</option>
-          </select>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors"
-        >
-          {loading ? 'Setting up…' : 'Get started'}
-        </button>
-      </form>
+      <OnboardingForm userId={user.id} />
     </div>
   )
 }
