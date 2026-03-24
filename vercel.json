@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/ai/briefing",
+      "schedule": "15 3 * * *"
+    },
+    {
+      "path": "/api/benchmark/cron",
+      "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/cron/groww-token",
+      "schedule": "35 0 * * *"
+    }
+  ]
+}
