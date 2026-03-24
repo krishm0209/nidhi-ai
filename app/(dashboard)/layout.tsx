@@ -17,11 +17,11 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id')
+    .select('full_name')
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/onboarding')
+  if (!profile?.full_name) redirect('/onboarding')
 
   const isAdmin = user.email === 'krish.makhija2@gmail.com'
 

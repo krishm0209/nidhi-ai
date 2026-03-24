@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (ADMIN_EMAIL && user.email !== ADMIN_EMAIL) {
+  if (!ADMIN_EMAIL || user.email !== ADMIN_EMAIL) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
