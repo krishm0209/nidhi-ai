@@ -30,7 +30,7 @@ export function OnboardingForm({ userId }: { userId: string }) {
 
     const { error: profileError } = await supabase
       .from('profiles')
-      .insert({ id: userId, full_name: fullName, phone, date_of_birth: dateOfBirth, risk_profile: riskProfile })
+      .upsert({ id: userId, full_name: fullName, phone, date_of_birth: dateOfBirth, risk_profile: riskProfile })
 
     if (profileError) {
       setError(profileError.message)

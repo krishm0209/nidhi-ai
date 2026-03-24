@@ -10,11 +10,11 @@ export default async function OnboardingPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id')
+    .select('full_name')
     .eq('id', user.id)
     .single()
 
-  if (profile) redirect('/dashboard')
+  if (profile?.full_name) redirect('/dashboard')
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-8">
