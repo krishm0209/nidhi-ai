@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdmin } from '@/lib/supabase/admin'
+import { supabaseAdmin as admin } from '@/lib/supabase/admin'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -11,8 +11,6 @@ export async function POST(request: Request) {
   }
 
   const { fullName, phone, dateOfBirth, riskProfile } = await request.json()
-
-  const admin = createAdmin()
 
   // Upsert profile
   const { error: profileError } = await admin
