@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 
 export function OnboardingForm({ userId }: { userId: string }) {
   const router = useRouter()
@@ -26,44 +25,16 @@ export function OnboardingForm({ userId }: { userId: string }) {
       return
     }
 
-    const supabase = createClient()
+    const res = await fetch('/api/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName, phone, dateOfBirth, riskProfile }),
+    })
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert({ id: userId, full_name: fullName, phone, date_of_birth: dateOfBirth, risk_profile: riskProfile })
+    const data = await res.json()
 
-    if (profileError) {
-      setError(profileError.message)
-      setLoading(false)
-      return
-    }
-
-    const { data: household, error: householdError } = await supabase
-      .from('households')
-      .insert({ name: `${fullName}'s Portfolio`, owner_id: userId })
-      .select('id')
-      .single()
-
-    if (householdError || !household) {
-      setError(householdError?.message ?? 'Failed to create household')
-      setLoading(false)
-      return
-    }
-
-    const { error: memberError } = await supabase
-      .from('household_members')
-      .insert({
-        household_id: household.id,
-        user_id: userId,
-        name: fullName,
-        relationship: 'self',
-        date_of_birth: dateOfBirth,
-        is_active: true,
-        visibility: 'full',
-      })
-
-    if (memberError) {
-      setError(memberError.message)
+    if (!res.ok) {
+      setError(data.error ?? 'Something went wrong')
       setLoading(false)
       return
     }
