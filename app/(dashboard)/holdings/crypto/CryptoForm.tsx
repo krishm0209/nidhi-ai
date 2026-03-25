@@ -45,7 +45,7 @@ export function CryptoForm() {
         <select
           name="coin_id"
           required
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           defaultValue=""
         >
           <option value="" disabled>Select coin</option>
@@ -68,7 +68,7 @@ export function CryptoForm() {
           name="coin_symbol"
           required
           placeholder="BTC"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm uppercase placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 uppercase placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -83,7 +83,7 @@ export function CryptoForm() {
           min={0}
           step="any"
           placeholder="0.5"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -98,7 +98,7 @@ export function CryptoForm() {
           min={0}
           step={0.01}
           placeholder="5000000"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -106,7 +106,7 @@ export function CryptoForm() {
         <label className="block text-sm font-medium text-zinc-700 mb-1">Exchange</label>
         <select
           name="exchange_source"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         >
           <option value="">Select exchange</option>
           <option value="wazirx">WazirX</option>

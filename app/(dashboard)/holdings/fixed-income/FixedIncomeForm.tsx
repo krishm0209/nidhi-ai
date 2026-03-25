@@ -52,7 +52,7 @@ export function FixedIncomeForm() {
           required
           value={instrumentType}
           onChange={(e) => setInstrumentType(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         >
           <option value="">Select instrument</option>
           {Object.entries(INSTRUMENT_LABELS).map(([value, label]) => (
@@ -66,7 +66,7 @@ export function FixedIncomeForm() {
         <input
           name="institution"
           placeholder="e.g. SBI, HDFC Bank"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -81,7 +81,7 @@ export function FixedIncomeForm() {
           min={0}
           step={100}
           placeholder="100000"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -94,7 +94,7 @@ export function FixedIncomeForm() {
           min={0}
           max={30}
           placeholder="7.10"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -103,7 +103,7 @@ export function FixedIncomeForm() {
         <input
           name="maturity_date"
           type="date"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -115,7 +115,7 @@ export function FixedIncomeForm() {
           step={0.01}
           min={0}
           placeholder="Leave blank to auto-compute"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -131,7 +131,7 @@ export function FixedIncomeForm() {
             min={0}
             max={75}
             defaultValue={50}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
           <p className="mt-1 text-xs text-zinc-400">Max 75% equity under auto choice</p>
         </div>
@@ -142,7 +142,7 @@ export function FixedIncomeForm() {
         <input
           name="notes"
           placeholder="Optional notes (account number, nominee, etc.)"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 

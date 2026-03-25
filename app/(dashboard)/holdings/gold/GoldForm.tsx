@@ -40,7 +40,7 @@ export function GoldForm() {
           required
           value={form}
           onChange={(e) => setForm(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         >
           <option value="physical">Physical Gold</option>
           <option value="digital">Digital Gold</option>
@@ -63,7 +63,7 @@ export function GoldForm() {
               min={0}
               step="any"
               placeholder="10"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
           <div>
@@ -77,7 +77,7 @@ export function GoldForm() {
               min={0}
               step={0.01}
               placeholder="6500"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
         </>
@@ -94,7 +94,7 @@ export function GoldForm() {
               min={0}
               step="any"
               placeholder="10"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
             {form === 'sgb' && (
               <p className="mt-1 text-xs text-zinc-400">Each SGB unit = 1 gram of gold</p>
@@ -111,7 +111,7 @@ export function GoldForm() {
               min={0}
               step={0.01}
               placeholder="5000"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
         </>
@@ -123,7 +123,7 @@ export function GoldForm() {
           name="notes"
           type="text"
           placeholder="Jewellery, bank locker, etc."
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 

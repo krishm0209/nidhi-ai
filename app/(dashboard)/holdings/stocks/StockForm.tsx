@@ -36,7 +36,7 @@ export function StockForm() {
           name="symbol"
           required
           placeholder="e.g. RELIANCE"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm uppercase placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 uppercase placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -45,7 +45,7 @@ export function StockForm() {
         <select
           name="exchange"
           defaultValue="NSE"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         >
           <option value="NSE">NSE</option>
           <option value="BSE">BSE</option>
@@ -62,7 +62,7 @@ export function StockForm() {
           required
           min={1}
           placeholder="100"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -77,7 +77,7 @@ export function StockForm() {
           min={0}
           step={0.01}
           placeholder="2500.00"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -86,7 +86,7 @@ export function StockForm() {
         <input
           name="purchase_date"
           type="date"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 
@@ -94,7 +94,7 @@ export function StockForm() {
         <label className="block text-sm font-medium text-zinc-700 mb-1">Broker</label>
         <select
           name="broker_source"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 bg-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         >
           <option value="">Select broker</option>
           <option value="groww">Groww</option>
