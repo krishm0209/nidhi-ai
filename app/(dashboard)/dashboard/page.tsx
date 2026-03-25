@@ -2,23 +2,12 @@ import Link from 'next/link'
 import { MorningBriefing } from '@/components/dashboard/MorningBriefing'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import { getMFNavs } from '@/lib/market/mf'
-import { getCryptoPricesINR } from '@/lib/market/crypto'
-import { getStockPrices } from '@/lib/market/stocks'
 import { StatCard, Card } from '@/components/ui/Card'
 import { AllocationPie } from '@/components/charts/AllocationPie'
 import { formatINR, formatGain, formatChange } from '@/lib/utils/format'
 import { TrendingUp, TrendingDown, Wallet, BarChart3, ArrowUpRight, Plus, RefreshCw } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { AllocationSlice } from '@/components/charts/AllocationPie'
-
-const COLORS = {
-  stocks: '#10b981',
-  mutualfunds: '#3b82f6',
-  crypto: '#f97316',
-  fixedincome: '#8b5cf6',
-  gold: '#eab308',
-}
 
 const DOT_COLORS: Record<string, string> = {
   Stocks: '#10b981',
@@ -63,44 +52,28 @@ export default async function DashboardPage() {
 
   const hasHoldings = stocks.length + mfs.length + cryptos.length + fixedIncomes.length + golds.length > 0
 
-  const [navs, cryptoPrices, stockPrices] = await Promise.all([
-    getMFNavs(mfs.map((h) => h.scheme_code)),
-    getCryptoPricesINR(cryptos.map((h) => h.coin_id)),
-    getStockPrices(stocks.map((h) => ({ symbol: h.symbol, exchange: h.exchange as 'NSE' | 'BSE' }))),
-  ])
-
-  // Stocks
-  let stocksInvested = 0, stocksCurrent = 0, stocksDayChange = 0
+  // Use purchase prices as baseline (no external API calls = fast load)
+  let stocksInvested = 0, stocksCurrent = 0
   for (const h of stocks) {
-    const quote = stockPrices[`${h.exchange}:${h.symbol}`]
-    const invested = h.average_price * h.quantity
-    const current = (quote?.ltp ?? h.average_price) * h.quantity
-    stocksInvested += invested
-    stocksCurrent += current
-    if (quote) stocksDayChange += current * (quote.day_change_pct / 100)
+    stocksInvested += h.average_price * h.quantity
+    stocksCurrent += h.average_price * h.quantity
   }
 
-  // Mutual funds
   let mfInvested = 0, mfCurrent = 0
   for (const h of mfs) {
-    const nav = navs[h.scheme_code] ?? h.purchase_nav ?? 0
-    mfInvested += h.units * (h.purchase_nav ?? nav)
-    mfCurrent += h.units * nav
+    mfInvested += h.units * (h.purchase_nav ?? 0)
+    mfCurrent += h.units * (h.purchase_nav ?? 0)
   }
 
-  // Crypto
   let cryptoInvested = 0, cryptoCurrent = 0
   for (const h of cryptos) {
-    const price = cryptoPrices[h.coin_id] ?? h.average_price_inr
     cryptoInvested += h.quantity * h.average_price_inr
-    cryptoCurrent += h.quantity * price
+    cryptoCurrent += h.quantity * h.average_price_inr
   }
 
-  // Fixed income
   let fiValue = 0
   for (const h of fixedIncomes) fiValue += h.current_value ?? h.principal
 
-  // Gold
   let goldValue = 0
   for (const h of golds) {
     if (h.weight_grams && h.purchase_price_per_gram) {
@@ -129,7 +102,6 @@ export default async function DashboardPage() {
 
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
 
-  // SIP reminder — show if user has active SIPs and hasn't imported CAS this month
   const hasActiveSips = mfs.some(h => h.is_sip)
   const lastImport = profile?.last_cas_import_at ? new Date(profile.last_cas_import_at) : null
   const istNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
@@ -149,62 +121,40 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-4 max-w-5xl">
 
-      {/* ── SIP reminder banner ──────────────────────────────────────────── */}
       {showSipReminder && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3.5 flex items-start gap-3">
           <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
             <RefreshCw className="h-4 w-4 text-blue-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-blue-900">
-              Update your portfolio
-            </p>
+            <p className="text-sm font-semibold text-blue-900">Update your portfolio</p>
             <p className="text-xs text-blue-600 mt-0.5">
               Your SIP has added new units this month. Import your latest CAS from CAMS or KFintech to keep your holdings accurate.
             </p>
           </div>
-          <Link
-            href="/import"
-            className="shrink-0 text-xs font-semibold text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors px-3 py-1.5 rounded-lg"
-          >
+          <Link href="/import" className="shrink-0 text-xs font-semibold text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors px-3 py-1.5 rounded-lg">
             Import CAS →
           </Link>
         </div>
       )}
 
-      {/* ── Hero net worth card ──────────────────────────────────────────── */}
       {hasHoldings ? (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 p-5 text-white shadow-lg">
-          {/* Background decoration */}
           <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
           <div className="absolute -bottom-12 -right-4 h-48 w-48 rounded-full bg-white/5" />
-
           <p className="text-xs font-medium text-emerald-200 uppercase tracking-wider mb-1">Total Portfolio</p>
           <p className="text-4xl font-bold tracking-tight mb-3">{formatINR(totalCurrent)}</p>
-
           <div className="flex items-center gap-3 flex-wrap">
             <div className={clsx(
               'flex items-center gap-1 text-sm font-semibold px-2.5 py-1 rounded-full',
               gainPositive ? 'bg-white/15 text-white' : 'bg-red-500/30 text-red-100'
             )}>
-              {gainPositive
-                ? <TrendingUp className="h-3.5 w-3.5" />
-                : <TrendingDown className="h-3.5 w-3.5" />}
+              {gainPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
               {gainPositive ? '+' : ''}{formatINR(totalGainLoss)} ({gainPositive ? '+' : ''}{totalGainLossPct.toFixed(2)}%)
             </div>
-
-            {stocksDayChange !== 0 && (
-              <div className={clsx(
-                'text-xs font-medium px-2.5 py-1 rounded-full',
-                stocksDayChange >= 0 ? 'bg-white/10 text-emerald-100' : 'bg-red-500/20 text-red-200'
-              )}>
-                Today {stocksDayChange >= 0 ? '+' : ''}{formatINR(stocksDayChange)}
-              </div>
-            )}
           </div>
-
           <p className="text-xs text-emerald-200/70 mt-3">
-            Invested {formatINR(totalInvested + fiValue + goldValue)}
+            Based on purchase prices · Go to Holdings for live prices
           </p>
         </div>
       ) : (
@@ -227,12 +177,10 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── Morning briefing ────────────────────────────────────────────── */}
       {hasHoldings && <MorningBriefing />}
 
       {hasHoldings && (
         <>
-          {/* ── Stat cards ────────────────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <StatCard
               label="Total P&L"
@@ -243,12 +191,11 @@ export default async function DashboardPage() {
               accent={gainPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}
             />
             <StatCard
-              label="Day Change"
-              value={formatGain(stocksDayChange)}
-              sub="Stocks"
-              subPositive={stocksDayChange >= 0}
-              icon={stocksDayChange >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-              accent={stocksDayChange >= 0 ? 'bg-blue-50 text-blue-500' : 'bg-red-50 text-red-500'}
+              label="Invested"
+              value={formatINR(totalInvested + fiValue + goldValue)}
+              sub="total cost basis"
+              icon={<Wallet className="h-4 w-4" />}
+              accent="bg-blue-50 text-blue-500"
             />
             <StatCard
               label="Fixed Income"
@@ -266,7 +213,6 @@ export default async function DashboardPage() {
             />
           </div>
 
-          {/* ── Allocation + Holdings ────────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {allocation.length > 0 && (
               <Card>
@@ -274,7 +220,6 @@ export default async function DashboardPage() {
                 <AllocationPie data={allocation} />
               </Card>
             )}
-
             <Card padding="none">
               <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-zinc-900">Holdings</h2>
@@ -287,10 +232,7 @@ export default async function DashboardPage() {
                   className="flex items-center justify-between px-5 py-3.5 hover:bg-zinc-50 active:bg-zinc-100 transition-colors border-b border-zinc-50 last:border-0"
                 >
                   <div className="flex items-center gap-3">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full shrink-0"
-                      style={{ background: DOT_COLORS[item.colorKey] }}
-                    />
+                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: DOT_COLORS[item.colorKey] }} />
                     <div>
                       <p className="text-sm font-medium text-zinc-800">{item.label}</p>
                       <p className="text-xs text-zinc-400">
