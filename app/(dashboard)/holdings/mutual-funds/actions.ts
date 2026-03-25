@@ -46,12 +46,24 @@ export async function addMF(formData: FormData) {
 
 export async function updateMF(id: string, units: number, purchaseNav: number) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { error } = await supabase
     .from('mf_holdings')
     .update({ units, purchase_nav: purchaseNav })
     .eq('id', id)
   if (error) return { error: error.message }
+
+  // Mark portfolio as updated this month so SIP reminder banner dismisses
+  if (user) {
+    await supabase
+      .from('profiles')
+      .update({ last_cas_import_at: new Date().toISOString() })
+      .eq('id', user.id)
+  }
+
   revalidatePath('/holdings/mutual-funds')
+  revalidatePath('/')
   return { success: true }
 }
 

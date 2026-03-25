@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SipReminderBanner } from '@/components/dashboard/SipReminderBanner'
 import { MorningBriefing } from '@/components/dashboard/MorningBriefing'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -8,7 +9,7 @@ import { getStockPrices } from '@/lib/market/stocks'
 import { StatCard, Card } from '@/components/ui/Card'
 import { AllocationPie } from '@/components/charts/AllocationPie'
 import { formatINR, formatGain, formatChange } from '@/lib/utils/format'
-import { TrendingUp, TrendingDown, Wallet, BarChart3, ArrowUpRight, Plus, RefreshCw } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, BarChart3, ArrowUpRight, Plus } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { AllocationSlice } from '@/components/charts/AllocationPie'
 
@@ -140,22 +141,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-4 max-w-5xl">
 
-      {showSipReminder && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3.5 flex items-start gap-3">
-          <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
-            <RefreshCw className="h-4 w-4 text-blue-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-blue-900">Update your portfolio</p>
-            <p className="text-xs text-blue-600 mt-0.5">
-              Your SIP has added new units this month. Import your latest CAS from CAMS or KFintech to keep your holdings accurate.
-            </p>
-          </div>
-          <Link href="/import" className="shrink-0 text-xs font-semibold text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors px-3 py-1.5 rounded-lg">
-            Import CAS →
-          </Link>
-        </div>
-      )}
+      {showSipReminder && <SipReminderBanner />}
 
       {hasHoldings ? (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 p-5 text-white shadow-lg">
