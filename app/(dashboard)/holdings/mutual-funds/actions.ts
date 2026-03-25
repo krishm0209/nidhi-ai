@@ -44,6 +44,17 @@ export async function addMF(formData: FormData) {
   return { success: true }
 }
 
+export async function updateMF(id: string, units: number, purchaseNav: number) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('mf_holdings')
+    .update({ units, purchase_nav: purchaseNav })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/holdings/mutual-funds')
+  return { success: true }
+}
+
 export async function deleteMF(id: string) {
   const supabase = await createClient()
   const { error } = await supabase.from('mf_holdings').delete().eq('id', id)
