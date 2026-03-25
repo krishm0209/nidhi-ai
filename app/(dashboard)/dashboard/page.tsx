@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { MorningBriefing } from '@/components/dashboard/MorningBriefing'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getMFNavs } from '@/lib/market/mf'
+import { getCryptoPricesINR } from '@/lib/market/crypto'
+import { getStockPrices } from '@/lib/market/stocks'
 import { StatCard, Card } from '@/components/ui/Card'
 import { AllocationPie } from '@/components/charts/AllocationPie'
 import { formatINR, formatGain, formatChange } from '@/lib/utils/format'
@@ -52,28 +55,44 @@ export default async function DashboardPage() {
 
   const hasHoldings = stocks.length + mfs.length + cryptos.length + fixedIncomes.length + golds.length > 0
 
-  // Use purchase prices as baseline (no external API calls = fast load)
-  let stocksInvested = 0, stocksCurrent = 0
+  const [navs, cryptoPrices, stockPrices] = await Promise.all([
+    getMFNavs(mfs.map((h) => h.scheme_code)),
+    getCryptoPricesINR(cryptos.map((h) => h.coin_id)),
+    getStockPrices(stocks.map((h) => ({ symbol: h.symbol, exchange: h.exchange as 'NSE' | 'BSE' }))),
+  ])
+
+  // Stocks
+  let stocksInvested = 0, stocksCurrent = 0, stocksDayChange = 0
   for (const h of stocks) {
-    stocksInvested += h.average_price * h.quantity
-    stocksCurrent += h.average_price * h.quantity
+    const quote = stockPrices[`${h.exchange}:${h.symbol}`]
+    const invested = h.average_price * h.quantity
+    const current = (quote?.ltp ?? h.average_price) * h.quantity
+    stocksInvested += invested
+    stocksCurrent += current
+    if (quote) stocksDayChange += current * (quote.day_change_pct / 100)
   }
 
+  // Mutual funds
   let mfInvested = 0, mfCurrent = 0
   for (const h of mfs) {
-    mfInvested += h.units * (h.purchase_nav ?? 0)
-    mfCurrent += h.units * (h.purchase_nav ?? 0)
+    const nav = navs[h.scheme_code] ?? h.purchase_nav ?? 0
+    mfInvested += h.units * (h.purchase_nav ?? nav)
+    mfCurrent += h.units * nav
   }
 
+  // Crypto
   let cryptoInvested = 0, cryptoCurrent = 0
   for (const h of cryptos) {
+    const price = cryptoPrices[h.coin_id] ?? h.average_price_inr
     cryptoInvested += h.quantity * h.average_price_inr
-    cryptoCurrent += h.quantity * h.average_price_inr
+    cryptoCurrent += h.quantity * price
   }
 
+  // Fixed income
   let fiValue = 0
   for (const h of fixedIncomes) fiValue += h.current_value ?? h.principal
 
+  // Gold
   let goldValue = 0
   for (const h of golds) {
     if (h.weight_grams && h.purchase_price_per_gram) {
@@ -152,9 +171,17 @@ export default async function DashboardPage() {
               {gainPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
               {gainPositive ? '+' : ''}{formatINR(totalGainLoss)} ({gainPositive ? '+' : ''}{totalGainLossPct.toFixed(2)}%)
             </div>
+            {stocksDayChange !== 0 && (
+              <div className={clsx(
+                'text-xs font-medium px-2.5 py-1 rounded-full',
+                stocksDayChange >= 0 ? 'bg-white/10 text-emerald-100' : 'bg-red-500/20 text-red-200'
+              )}>
+                Today {stocksDayChange >= 0 ? '+' : ''}{formatINR(stocksDayChange)}
+              </div>
+            )}
           </div>
           <p className="text-xs text-emerald-200/70 mt-3">
-            Based on purchase prices · Go to Holdings for live prices
+            Invested {formatINR(totalInvested + fiValue + goldValue)}
           </p>
         </div>
       ) : (
@@ -191,11 +218,12 @@ export default async function DashboardPage() {
               accent={gainPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}
             />
             <StatCard
-              label="Invested"
-              value={formatINR(totalInvested + fiValue + goldValue)}
-              sub="total cost basis"
-              icon={<Wallet className="h-4 w-4" />}
-              accent="bg-blue-50 text-blue-500"
+              label="Day Change"
+              value={formatGain(stocksDayChange)}
+              sub="Stocks"
+              subPositive={stocksDayChange >= 0}
+              icon={stocksDayChange >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+              accent={stocksDayChange >= 0 ? 'bg-blue-50 text-blue-500' : 'bg-red-50 text-red-500'}
             />
             <StatCard
               label="Fixed Income"
