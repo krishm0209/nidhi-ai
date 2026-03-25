@@ -4,10 +4,8 @@ import { Card } from '@/components/ui/Card'
 import { formatINR } from '@/lib/utils/format'
 import { Info, Sparkles } from 'lucide-react'
 import {
-  getMFSchemeInfo,
   getMFUnderlyingHoldings,
   computeOverlap,
-  isEquityScheme,
   type UnderlyingHolding,
 } from '@/lib/market/mf-holdings'
 
@@ -48,11 +46,17 @@ export default async function OverlapPage() {
   // Deduplicate by scheme_code
   const uniqueMFs = [...new Map(mfs.map(m => [m.scheme_code, m])).values()]
 
-  // Fetch scheme info from mfapi + filter to equity only
-  const schemeInfos = await Promise.all(uniqueMFs.map(m => getMFSchemeInfo(m.scheme_code)))
-  const equityFunds = schemeInfos.filter(
-    (s): s is NonNullable<typeof s> => s !== null && isEquityScheme(s.scheme_category)
-  )
+  // Build scheme info from stored data — no external API call needed
+  // Fund type stored in DB maps to equity category for overlap analysis
+  const EQUITY_TYPES = new Set(['Equity', 'ELSS', 'Index', 'Hybrid'])
+  const equityFunds = uniqueMFs
+    .filter(m => !m.fund_type || EQUITY_TYPES.has(m.fund_type))
+    .map(m => ({
+      scheme_code: m.scheme_code,
+      scheme_name: m.scheme_name,
+      scheme_category: m.fund_type ?? 'Equity',
+      fund_house: '',
+    }))
 
   if (equityFunds.length < 2) {
     return (
