@@ -18,8 +18,8 @@ export function useStockPrices(tickers: string[]): Record<string, StockQuote> {
       return res.json()
     },
     enabled: tickers.length > 0,
-    refetchInterval: () => isMarketOpen() ? 30_000 : false,
-    staleTime: 10_000,
+    refetchInterval: false,
+    staleTime: Infinity,
   })
 
   return data ?? {}
