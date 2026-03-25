@@ -2,7 +2,8 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Upload, FileText, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Upload, FileText, CheckCircle, XCircle, AlertCircle, PenLine } from 'lucide-react'
+import Link from 'next/link'
 import { formatINR, formatUnits } from '@/lib/utils/format'
 import type { ParsedMFHolding } from '@/lib/parsers/cas'
 
@@ -164,7 +165,21 @@ export function CASImporter() {
           )}
 
           {result.holdings.length === 0 ? (
-            <p className="text-sm text-zinc-500">No mutual fund holdings found in this PDF.</p>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-center space-y-3">
+              <AlertCircle className="h-8 w-8 text-amber-500 mx-auto" />
+              <div>
+                <p className="text-sm font-semibold text-amber-900">Could not parse this statement format</p>
+                <p className="text-xs text-amber-700 mt-1">
+                  This PDF format isn't supported yet. You can add your mutual funds manually instead.
+                </p>
+              </div>
+              <Link
+                href="/holdings/mutual-funds"
+                className="inline-flex items-center gap-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 transition-colors"
+              >
+                <PenLine className="h-4 w-4" /> Add funds manually
+              </Link>
+            </div>
           ) : (
             <>
               <div className="overflow-x-auto">

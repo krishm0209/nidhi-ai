@@ -47,9 +47,12 @@ function extractStatementDate(text: string): string | null {
   // CAMS: "Statement Date : 25-Feb-2026"
   const m1 = text.match(/Statement\s+Date\s*:\s*(\d{2}-[A-Za-z]{3}-\d{4})/i)
   if (m1) return m1[1]
+  // AMC format: "Statement Date : 24 Mar 2026"
+  const m2 = text.match(/Statement\s+Date\s*:\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i)
+  if (m2) return m2[1]
   // KFintech / others: "as on DD-Mon-YYYY"
-  const m2 = text.match(/as\s+on\s+(\d{2}[-/]\w{2,3}[-/]\d{2,4})/i)
-  return m2 ? m2[1] : null
+  const m3 = text.match(/as\s+on\s+(\d{2}[-/]\w{2,3}[-/]\d{2,4})/i)
+  return m3 ? m3[1] : null
 }
 
 // ─────────────────────────────────────────────
@@ -287,6 +290,99 @@ function parseFolioBlock(block: string): Omit<ParsedMFHolding, 'schemeCode'> | n
 }
 
 // ─────────────────────────────────────────────
+// AMC Transaction Statement format
+// (e.g. Canara Robeco / KFintech AMC statements)
+//
+// Each scheme block starts with:
+//   "Fund Name (CODE) - ISIN : INFxxxxxxxxx"
+// Units appear just before "Lock Free Units :"
+// Cost Value: "Cost Value : X Current value : Y"
+// NAV: "NAV : (`) X (as on DD Mon YYYY)"
+// Folio: "123456789\n(Non Transferable)"
+// SIP: SIP/STP/SWP Registration Summary section
+// ─────────────────────────────────────────────
+
+function convertDMYToMon(dmy: string): string | null {
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const m = dmy.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (!m) return null
+  const mon = MONTHS[parseInt(m[2]) - 1]
+  return mon ? `${m[1]}-${mon}-${m[3]}` : null
+}
+
+function parseAMCTransactionStatement(text: string): Omit<ParsedMFHolding, 'schemeCode'>[] {
+  // Only try this parser if we see the AMC scheme header pattern
+  if (!/\([A-Z]{2,6}\)\s*-\s*ISIN\s*:/i.test(text)) return []
+
+  const results: Omit<ParsedMFHolding, 'schemeCode'>[] = []
+
+  // Folio number — appears as "123456789\n(Non Transferable)"
+  const folioMatch = text.match(/(\d{8,})\s*\n?\(Non Transferable\)/i)
+  const folioNumber = folioMatch ? folioMatch[1].trim() : ''
+
+  // Build SIP map: schemeCode → { purchaseDate, sipAmount }
+  // SIP section format: "Live SIP{CODE}\n{fromDate}\n{toDate}\n{amount}\nMonthly / {day}"
+  const sipByCode = new Map<string, { purchaseDate: string | null; sipAmount: number | null }>()
+  const sipSection = text.match(/SIP\/STP\/SWP Registration Summary([\s\S]*?)(?=\nFolio|\nKYC|$)/i)
+  if (sipSection) {
+    for (const m of sipSection[1].matchAll(/Live\s+SIP\s*([A-Z]{2,6})\s*\n(\d{2}\/\d{2}\/\d{4})\s*\n\d{2}\/\d{2}\/\d{4}\s*\n([\d,]+)\s*\nMonthly/gi)) {
+      sipByCode.set(m[1], {
+        purchaseDate: convertDMYToMon(m[2]),
+        sipAmount: parseInt(m[3].replace(/,/g, '')),
+      })
+    }
+  }
+
+  // Find all scheme headers
+  const schemeHeaderRegex = /^(.+?)\s*\(([A-Z]{2,6})\)\s*-\s*ISIN\s*:\s*(INF[A-Z0-9]{9})/gm
+  const schemes: Array<{ name: string; code: string; isin: string; startIdx: number }> = []
+  let m
+  while ((m = schemeHeaderRegex.exec(text)) !== null) {
+    schemes.push({ name: m[1].trim(), code: m[2], isin: m[3], startIdx: m.index })
+  }
+  if (schemes.length === 0) return []
+
+  for (let i = 0; i < schemes.length; i++) {
+    const { name, code, isin, startIdx } = schemes[i]
+    const endIdx = i + 1 < schemes.length ? schemes[i + 1].startIdx : text.length
+    const block = text.slice(startIdx, endIdx)
+
+    // Units: last number before "Lock Free Units :"
+    const unitsMatch = block.match(/([\d,]+\.\d{3})\n+(?:[\d,]+\.\d*\n+)*Lock Free Units\s*:/i)
+    if (!unitsMatch) continue
+    const units = parseFloat(unitsMatch[1].replace(/,/g, ''))
+    if (isNaN(units) || units <= 0) continue
+
+    // Cost Value (invested amount)
+    const costMatch = block.match(/Cost Value\s*:\s*([\d,]+\.?\d*)/i)
+    const investedValue = costMatch ? parseFloat(costMatch[1].replace(/,/g, '')) : null
+
+    // Current NAV
+    const navMatch = block.match(/NAV\s*:\s*\([^)]*\)\s*([\d,]+\.?\d*)\s*\(as on/i)
+    const nav = navMatch ? parseFloat(navMatch[1].replace(/,/g, '')) : null
+
+    const purchaseNav = investedValue && units ? investedValue / units : null
+    const sip = sipByCode.get(code) ?? null
+
+    results.push({
+      schemeName: name,
+      isin,
+      folioNumber,
+      units,
+      purchaseNav,
+      nav,
+      investedValue,
+      fundType: null,
+      purchaseDate: sip?.purchaseDate ?? null,
+      isSip: sip !== null,
+      sipAmount: sip?.sipAmount ?? null,
+    })
+  }
+
+  return results
+}
+
+// ─────────────────────────────────────────────
 // AMFI NAVAll.txt — ISIN → scheme code lookup
 // ─────────────────────────────────────────────
 
@@ -422,6 +518,11 @@ export async function parseCASPDF(buffer: Buffer): Promise<CASParseResult> {
         errors.push(`Could not parse folio block: ${block.slice(0, 80).replace(/\n/g, ' ')}`)
       }
     }
+  }
+
+  // Fall back to AMC transaction statement format (e.g. Canara Robeco, KFintech AMC)
+  if (rawHoldings.length === 0) {
+    rawHoldings = parseAMCTransactionStatement(text)
   }
 
   // Look up scheme codes in parallel (ISIN-first via AMFI, then name fallback)
