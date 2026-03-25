@@ -53,7 +53,7 @@ export function isMarketOpen(): boolean {
  * Short TTL during market hours, long TTL when closed.
  */
 export function getCacheTTL(): number {
-  return isMarketOpen() ? 5 : 3600
+  return isMarketOpen() ? 25 : 3600
 }
 
 /** Returns a human-readable market status string. */
