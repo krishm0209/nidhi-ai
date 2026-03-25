@@ -1,36 +1,40 @@
 import { getOrSet } from '@/lib/cache/redis'
-import { getCacheTTL } from '@/lib/utils/market-calendar'
 
 /**
- * Fetch current NAVs for the given AMFI scheme codes from MFapi.in.
- * Results are cached in Redis with a market-aware TTL.
+ * Fetch current NAVs for the given AMFI scheme codes directly from AMFI NAVAll.txt.
+ * The full NAV map is cached in Redis for 1 hour (NAV is published once a day).
  * Returns a map of schemeCode → NAV (missing entries = fetch failed).
  */
+
+async function getAMFINavMap(): Promise<Record<number, number>> {
+  return getOrSet<Record<number, number>>(
+    'amfi:navall',
+    async () => {
+      const res = await fetch('https://portal.amfiindia.com/spages/NAVAll.txt', {
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!res.ok) return {}
+      const text = await res.text()
+      const map: Record<number, number> = {}
+      for (const line of text.split('\n')) {
+        const parts = line.split(';')
+        if (parts.length < 5) continue
+        const code = parseInt(parts[0].trim())
+        const nav = parseFloat(parts[4].trim())
+        if (!isNaN(code) && !isNaN(nav) && nav > 0) map[code] = nav
+      }
+      return map
+    },
+    3600, // 1 hour — NAV is published once a day
+  )
+}
+
 export async function getMFNavs(schemeCodes: number[]): Promise<Record<number, number>> {
   if (schemeCodes.length === 0) return {}
-
-  const ttl = getCacheTTL()
-
-  const entries = await Promise.all(
-    schemeCodes.map(async (code) => {
-      const nav = await getOrSet<number | null>(
-        `mf:nav:${code}`,
-        async () => {
-          const res = await fetch(`${process.env.MFAPI_BASE_URL}/mf/${code}/latest`)
-          if (!res.ok) return null
-          const json = await res.json()
-          const navStr: string | undefined = json?.data?.[0]?.nav
-          return navStr ? parseFloat(navStr) : null
-        },
-        ttl,
-      )
-      return [code, nav] as const
-    }),
-  )
-
+  const allNavs = await getAMFINavMap()
   const result: Record<number, number> = {}
-  for (const [code, nav] of entries) {
-    if (nav !== null && nav !== undefined) result[code] = nav
+  for (const code of schemeCodes) {
+    if (allNavs[code]) result[code] = allNavs[code]
   }
   return result
 }
