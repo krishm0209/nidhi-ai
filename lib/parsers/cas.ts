@@ -31,6 +31,7 @@ export interface CASParseResult {
   pan: string | null
   statementDate: string | null
   errors: string[]
+  _rawText?: string  // only included when holdings = 0, for debugging
 }
 
 // ─────────────────────────────────────────────
@@ -431,5 +432,11 @@ export async function parseCASPDF(buffer: Buffer): Promise<CASParseResult> {
     })),
   )
 
-  return { holdings, pan, statementDate, errors }
+  return {
+    holdings,
+    pan,
+    statementDate,
+    errors,
+    ...(holdings.length === 0 ? { _rawText: text.slice(0, 3000) } : {}),
+  }
 }
