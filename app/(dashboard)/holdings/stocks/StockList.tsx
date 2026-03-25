@@ -6,26 +6,36 @@ import { formatINR, formatChange, formatGain } from '@/lib/utils/format'
 import { useStockPrices } from '@/lib/hooks/useStockPrices'
 import { isMarketOpen } from '@/lib/utils/market-calendar'
 import { clsx } from 'clsx'
-import type { StockHoldingEnriched } from '@/types/portfolio'
+import type { StockHolding } from '@/types/portfolio'
 
-export function StockList({ holdings }: { holdings: StockHoldingEnriched[] }) {
+export function StockList({ holdings }: { holdings: StockHolding[] }) {
   const [isPending, startTransition] = useTransition()
 
-  // Poll live prices during market hours — overrides server-rendered prices
   const tickers = holdings.map(h => `${h.exchange}:${h.symbol}`)
   const livePrices = useStockPrices(tickers)
   const marketOpen = isMarketOpen()
 
-  // Merge live prices into holdings
+  // Enrich holdings with live prices client-side
   const live = holdings.map(h => {
     const quote = livePrices[`${h.exchange}:${h.symbol}`]
-    if (!quote) return h
-    const current_price = quote.ltp
+    const current_price = quote?.ltp ?? h.average_price
+    const invested_value = h.average_price * h.quantity
     const current_value = current_price * h.quantity
-    const gain_loss = current_value - h.invested_value
-    const gain_loss_pct = h.invested_value > 0 ? (gain_loss / h.invested_value) * 100 : 0
-    return { ...h, current_price, current_value, gain_loss, gain_loss_pct, day_change_pct: quote.day_change_pct }
+    const gain_loss = current_value - invested_value
+    const gain_loss_pct = invested_value > 0 ? (gain_loss / invested_value) * 100 : 0
+    return {
+      ...h,
+      current_price,
+      current_value,
+      invested_value,
+      gain_loss,
+      gain_loss_pct,
+      day_change_pct: quote?.day_change_pct ?? 0,
+    }
   })
+
+  const totalInvested = live.reduce((s, h) => s + h.invested_value, 0)
+  const totalCurrent = live.reduce((s, h) => s + h.current_value, 0)
 
   function handleDelete(id: string) {
     if (!confirm('Remove this stock holding?')) return
@@ -34,6 +44,23 @@ export function StockList({ holdings }: { holdings: StockHoldingEnriched[] }) {
 
   return (
     <>
+      {/* ── Header with totals ─────────────────────────────────────────── */}
+      <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-zinc-900">
+          Your stocks ({holdings.length})
+        </h2>
+        <div className="text-xs text-zinc-500">
+          Current:{' '}
+          <span className="font-medium text-zinc-800">
+            ₹{totalCurrent.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+          </span>
+          {'  '}Invested:{' '}
+          <span className="font-medium text-zinc-800">
+            ₹{totalInvested.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+          </span>
+        </div>
+      </div>
+
       {/* ── Live indicator ────────────────────────────────────────────── */}
       {marketOpen && (
         <div className="px-5 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
@@ -41,7 +68,7 @@ export function StockList({ holdings }: { holdings: StockHoldingEnriched[] }) {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
-          <span className="text-xs font-medium text-emerald-700">Live · updating every 5s</span>
+          <span className="text-xs font-medium text-emerald-700">Live · prices loaded on page open</span>
         </div>
       )}
 
@@ -52,14 +79,12 @@ export function StockList({ holdings }: { holdings: StockHoldingEnriched[] }) {
           const isGain = h.gain_loss >= 0
           return (
             <div key={h.id} className="px-4 py-4 flex items-center gap-3">
-              {/* Symbol badge */}
               <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
                 <span className="text-[10px] font-bold text-emerald-700 leading-tight text-center px-0.5">
                   {h.symbol.slice(0, 4)}
                 </span>
               </div>
 
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-zinc-900 text-sm">{h.symbol}</span>
